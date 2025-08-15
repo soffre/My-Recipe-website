@@ -1,20 +1,14 @@
 package main
 
 import (
-	"net/http"
+	"go-functions/routes"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	router := gin.Default()
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "healthy"})
-	})
-
-	router.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"message": "pong"})
-	})
-
+	// Set up routes
+	routes.SetUpRoutes(router)
 	router.Run()
 }
