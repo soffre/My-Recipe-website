@@ -1,6 +1,8 @@
 package routes
 
 import (
+	hasuraactionhandler "go-functions/Handlers/Hasura_action_handler"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,4 +14,6 @@ func SetUpRoutes(router *gin.Engine) {
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
 	})
+
+	router.POST("/login", hasuraactionhandler.LoginHandler)
 }

@@ -19,6 +19,8 @@ services:
       - ./go-functions:/app
     environment:
       JWT_SECRET_KEY: "a-string-secret-at-least-256-bits-long"
+      EVENT_SECRET: "my-event-secret"
+      HASURA_GRAPHQL_ENDPOINT: "http://graphql-engine:8080/v1/graphql"
 
 
   graphql-engine:
@@ -38,6 +40,8 @@ services:
       HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
       ## uncomment next line to run console offline (i.e load console assets from server instead of CDN)
       # HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
+      ACTION_BASE_URL: http://go-backend:8080
+      EVENT_SECRET: my-event-secret
       ## uncomment next line to set an admin secret
       HASURA_GRAPHQL_ADMIN_SECRET: mystrongsecret
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "a-string-secret-at-least-256-bits-long"}'
