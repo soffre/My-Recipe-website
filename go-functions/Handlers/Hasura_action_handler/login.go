@@ -22,13 +22,24 @@ func LoginHandler(c *gin.Context) {
 	}
 
 	// Extract session variables and input
-	// sessionVariables := actionPayload.SessionVariables
-	// input := actionPayload.Input
-	// credintails, ok := input["credentails"].(map[string]interface{})
-	// if !ok {
-	// 	c.JSON(400, gin.H{"error": "Invalid credentials format"})
-	// 	return
-	// }
+	sessionVariables := actionPayload.SessionVariables
+	input := actionPayload.Input
+
+	credintails, ok := input["credentails"].(map[string]interface{})
+	if !ok {
+		c.JSON(400, gin.H{"error": "Invalid credentials format"})
+		return
+	}
+
+	email, ok := credintails["email"].(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "Email is required"})
+	}
+
+	password, ok := credintails["password"].(string)
+	if !ok {
+		c.JSON(400, gin.H{"error": "Password is required"})
+	}
 
 	// fmt.Println(credintails)
 	// fmt.Println(sessionVariables)
