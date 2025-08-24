@@ -1,18 +1,31 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-import colors from 'tailwindcss/colors'
-
 export default defineNuxtConfig({
-  modules: ['@nuxtjs/tailwindcss'],
-  compatibilityDate: '2025-07-15',
-  devtools: { enabled: true }
+	css: ["@/assets/css/tailwind.css"],
+	modules: [
+		"@nuxt/eslint",
+		"@nuxtjs/tailwindcss",
+		"@nuxtjs/google-fonts",
+	],
+	devtools: { enabled: true },
+	compatibilityDate: "2025-07-15",
 
-  // tailwindcss: {
-  //   config: {
-  //     theme :{ 
-  //       extend: {
-  //         colors : {primary : colors.green}
-  //       }
-  //     }
-  //   }
-  // }
-})
+	googleFonts: {
+		families: {
+			'Playfair Display': [400, 500, 700],
+			Inter: [400, 500, 600, 700],
+		},
+		display: 'swap',
+		download: true,
+	},
+
+	eslint: {
+		config: {
+			stylistic: {
+				indent: "tab",
+				semi: true,
+				quotes: "double",
+
+			},
+		},
+	},
+});

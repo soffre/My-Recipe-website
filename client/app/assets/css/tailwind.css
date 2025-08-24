@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Global base styles */
+body {
+  @apply bg-background text-text font-body leading-relaxed antialiased;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  @apply font-heading font-bold text-primary;
+}
+
+/* Links */
+a {
+  @apply text-primary hover:text-accent transition-colors;
+}
+
+/* Buttons */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-colors;
+}
+.btn-primary {
+  @apply bg-primary text-lightText hover:bg-green-700;
+}
+.btn-secondary {
+  @apply bg-secondary text-text hover:bg-yellow-500;
+}
+
+/* Container for content */
+.container {
+  @apply max-w-7xl mx-auto px-4;
+}
