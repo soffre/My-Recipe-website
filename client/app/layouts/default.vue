@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<header>
-			<h1>Title</h1>
+			<AppNavBar />
 		</header>
 
 		<slot />
