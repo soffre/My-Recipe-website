@@ -322,7 +322,7 @@ const resetFilters = () => {
 <template>
     <div class="min-h-screen bg-background">
         <!-- Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-10">
+        <!-- <header class="bg-white shadow-sm sticky top-0 z-10">
             <div class="container py-4">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <h1 class="text-2xl font-heading">Recipe Explorer</h1>
@@ -348,7 +348,7 @@ const resetFilters = () => {
                     </div>
                 </div>
             </div>
-        </header>
+        </header> -->
 
         <main class="container py-8">
             <!-- Trending Recipes Section -->

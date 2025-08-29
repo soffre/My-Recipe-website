@@ -3,7 +3,6 @@
 		<header>
 			<AppNavBar />
 		</header>
-
 		<slot />
 	</div>
 </template>

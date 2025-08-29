@@ -1,7 +1,12 @@
+<script setup lang="ts">
+useSeoMeta({
+	ogImage: '/logo.png'
+})
+</script>
 <template>
 	<div>
-		<!-- <NuxtLayout> -->
+		<NuxtLayout>
 			<NuxtPage />
-		<!-- </NuxtLayout> -->
+		</NuxtLayout>
 	</div>
 </template>
