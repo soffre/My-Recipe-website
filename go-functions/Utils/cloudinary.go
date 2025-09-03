@@ -13,5 +13,3 @@ func credentails() (*cloudinary.Cloudinary, context.Context) {
 
 	return cld, cxt
 }
-
-func uploadImage()
