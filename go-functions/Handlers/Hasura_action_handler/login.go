@@ -2,46 +2,13 @@ package hasuraactionhandler
 
 import (
 	"context"
+	. "go-functions/Utils"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/hasura/go-graphql-client"
-	"golang.org/x/crypto/bcrypt"
 )
-
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
-
-func CheckPasswordHash(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
-}
-
-func createToken(name string, email string, userId uuid.UUID, avaterURL string) (string, error) {
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"fullName":  name,
-			"email":     email,
-			"userId":    userId,
-			"avaterURL": avaterURL,
-			"https://hasura.io/jwt/claims": map[string]interface{}{
-				"x-hasura-allowed-roles": []string{"user"},
-				"x-hasura-default-role":  "user",
-				"x-hasura-user-id":       userId.String(),
-			},
-			"exp": time.Now().Add(time.Hour * 24).Unix(),
-		})
-	tokenString, err := jwtToken.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))
-	if err != nil {
-		return "", err
-	}
-	return tokenString, nil
-}
 
 type ActionPayload struct {
 	SessionVariables map[string]interface{} `json:"session_variables"`
@@ -110,7 +77,7 @@ func LoginHandler(c *gin.Context) {
 		return
 	}
 
-	token, err := createToken(user.Name, user.Email, user.ID, user.AvaterURL)
+	token, err := CreateToken(user.Name, user.Email, user.ID, user.AvaterURL)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to create token"})
 		return
