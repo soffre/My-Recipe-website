@@ -44,7 +44,7 @@ func (s *VerificationService) VerifyEmail(ctx context.Context, email, old_code, 
 
 func (s *VerificationService) SetEmailVerified(ctx context.Context, code, email string) error {
 
-	if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, code, string(repository.ActionPasswordReset), "SUCCESS"); err != nil {
+	if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, code, string(repository.ActionEmailVerification), "SUCCESS"); err != nil {
 		log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
 	}
 	// update the user table isVerified to true

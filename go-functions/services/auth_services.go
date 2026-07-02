@@ -61,18 +61,18 @@ func (s *AuthService) CreateToken(userId uuid.UUID, email string, roles []string
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"sub":      userId,
+			"sub":      userId.String(),
 			"username": email,
 			"iss":      "tafach-kitchen-identity",
 			"exp":      jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 			"https://hasura.io/jwt/claims": map[string]interface{}{
 				"x-hasura-allowed-roles": roles,
 				"x-hasura-default-role":  defaultRoles,
-				"x-hasura-user-id":       userId,
+				"x-hasura-user-id":       userId.String(),
 			},
 		})
 
-	return jwtToken.SignedString(s.jwtSecret)
+	return jwtToken.SignedString([]byte("a-string-secret-at-least-256-bits-long"))
 }
 
 func (s *AuthService) HashPassword(password string) (string, error) {

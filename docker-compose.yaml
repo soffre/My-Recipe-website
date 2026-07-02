@@ -17,7 +17,7 @@ services:
     volumes:
       - ./go-functions:/app
     environment:
-      JWT_SECRET_KEY: "a-string-secret-at-least-256-bits-long"
+      JWT_SECRET_KEY: a-string-secret-at-least-256-bits-long
       VERIFICATION_CODE_TTL: "15m"
       EVENT_SECRET: "my-event-secret"
       HASURA_GRAPHQL_ENDPOINT: "http://graphql-engine:8080/v1/graphql"

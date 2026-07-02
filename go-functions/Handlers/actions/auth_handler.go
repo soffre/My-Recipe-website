@@ -56,7 +56,7 @@ type LoginRequestPayload struct {
 
 func LoginHandler(c *gin.Context) {
 
-	var payload SignUpRequestPayload
+	var payload LoginRequestPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
 		_ = c.Error(response.NewValidationError("Invalid JSON login payload parameters.", err))
 		return
@@ -71,8 +71,9 @@ func LoginHandler(c *gin.Context) {
 	}
 
 	response.SendOk(c, gin.H{
-		"data":    token,
+		"token":   token,
 		"message": "Authenitcate succesfully",
+		"code":    "SUCCESS",
 	})
 }
 

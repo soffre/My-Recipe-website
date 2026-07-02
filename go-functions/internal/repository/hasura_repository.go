@@ -120,7 +120,7 @@ func (r *HasuraRepository) TransactionalSignUp(ctx context.Context, email, passw
 
 		InsertVerification struct {
 			Email string `graphql:"email"`
-		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type}, on_conflict: {on_constraint: VerificationData_pkey, update_columns: [code, expireAt, type]})"`
+		} `graphql:"insert_VerificationData_one(object: {email: $email, code: $code, expireAt: $expireAt, type: $type}, on_conflict: {constraint: VerificationData_pkey, update_columns: [code, expireAt, type]})"`
 	}
 
 	expireAt := time.Now().Add(window)
