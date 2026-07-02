@@ -8,6 +8,8 @@ import (
 	"go-functions/internal/response"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,6 +31,8 @@ type UserProfile struct {
 	roles     []string
 }
 
+var DefaultAvatarURL = os.Getenv("DEFAULT_AVATER_URL")
+
 func NewAuthService(repo *repository.HasuraRepository, jwtSecret string, codeTTLStr string) *AuthService {
 	duration := 15 * time.Minute
 
@@ -48,25 +52,24 @@ func NewAuthService(repo *repository.HasuraRepository, jwtSecret string, codeTTL
 
 }
 
-func (s *AuthService) CreateToken(userFromDB UserProfile) (string, error) {
+func (s *AuthService) CreateToken(userId uuid.UUID, email string, roles []string) (string, error) {
 
 	defaultRoles := "user"
-	if len(userFromDB.roles) > 0 {
-		defaultRoles = userFromDB.roles[0]
+	if len(roles) > 0 {
+		defaultRoles = roles[0]
 	}
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"fullName":  userFromDB.fullName,
-			"email":     userFromDB.email,
-			"userId":    userFromDB.userId,
-			"avaterURL": userFromDB.avaterURL,
+			"sub":      userId,
+			"username": email,
+			"iss":      "tafach-kitchen-identity",
+			"exp":      jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 			"https://hasura.io/jwt/claims": map[string]interface{}{
-				"x-hasura-allowed-roles": userFromDB.roles,
+				"x-hasura-allowed-roles": roles,
 				"x-hasura-default-role":  defaultRoles,
-				"x-hasura-user-id":       userFromDB.userId.String(),
+				"x-hasura-user-id":       userId,
 			},
-			"exp": jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 		})
 
 	return jwtToken.SignedString(s.jwtSecret)
@@ -78,8 +81,101 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 }
 
 func (s *AuthService) CheckPasswordHash(plainPassword, hashPassword string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(plainPassword))
-	return err == nil
+	return bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(plainPassword)) == nil
+}
+
+func (s *AuthService) RegisterNewUser(ctx context.Context, email, password, name, avatarURL string) error {
+
+	if !utils.IsValidEmail(email) {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Please input a valid email address."}
+	}
+	if len(password) < 8 {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Password must consist of 8 or more characters."}
+	}
+
+	cleanName := strings.TrimSpace(name)
+	if cleanName == "" {
+		return &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Name is a required field and cannot be left blank."}
+	}
+
+	finalAvatarURL := strings.TrimSpace(avatarURL)
+	if finalAvatarURL == "" {
+		finalAvatarURL = DefaultAvatarURL
+	}
+
+	existingUser, err := s.repo.FindUserByEmail(ctx, email)
+	if err != nil {
+		return err
+	}
+	if existingUser != nil {
+		return &response.AppError{
+			HTTPStatus: http.StatusConflict,
+			Code:       response.CodeInvalidInput,
+			Message:    "An account with this email address already exists."}
+	}
+
+	hashedPassword, err := s.HashPassword(password)
+	if err != nil {
+		return &response.AppError{
+			HTTPStatus: http.StatusInternalServerError,
+			Code:       response.CodeInternalError,
+			Message:    "Encryption processing failed.",
+			RawError:   err}
+	}
+
+	verifyCode := utils.GenerateRandomString(6)
+
+	err = s.repo.TransactionalSignUp(ctx, email, hashedPassword, cleanName, finalAvatarURL, verifyCode, s.codeTTL, repository.ActionEmailVerification)
+	if err != nil {
+		return err
+	}
+
+	subject := utils.SubjectEmailVerification
+	body := utils.GetEmailVerificationTemplate(verifyCode)
+	if err = mail.SendEmail(email, subject, body); err != nil {
+		return response.NewSMTPMailError("Account registered successfully, but verification email delivery failed.", err)
+	}
+
+	return nil
+}
+
+func (s *AuthService) Login(ctx context.Context, email, password string) (string, error) {
+
+	if !utils.IsValidEmail(email) {
+		return "", &response.AppError{
+			HTTPStatus: http.StatusBadRequest,
+			Code:       response.CodeInvalidInput,
+			Message:    "Please provide a valid email."}
+	}
+
+	user, err := s.repo.FindUserByEmail(ctx, email)
+	if err != nil {
+		return "", err
+	}
+	if user == nil || !s.CheckPasswordHash(password, user.PasswordHash) {
+		return "", &response.AppError{
+			HTTPStatus: http.StatusUnauthorized,
+			Code:       response.CodeAuthFailed,
+			Message:    "Invalid email or password credentials."}
+	}
+
+	if !user.IsVerified {
+		return "", &response.AppError{
+			HTTPStatus: http.StatusForbidden,
+			Code:       response.CodePermissionDenied,
+			Message:    "Please verify your email address before logging in."}
+	}
+
+	return s.CreateToken(user.ID, user.Email, user.Roles)
 }
 
 func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) error {

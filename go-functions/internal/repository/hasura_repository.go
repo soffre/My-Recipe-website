@@ -116,7 +116,7 @@ func (r *HasuraRepository) TransactionalSignUp(ctx context.Context, email, passw
 	var mutation struct {
 		InsertUser struct {
 			AffectedRows int `graphql:"affected_rows"`
-		} `graphql:"insert_Users(objects: {email: $email, password: $password, name: $name, avatarUrl: $avatarUrl, roles: [\"user\"]})"` // 🌟 Added fields here
+		} `graphql:"insert_Users(objects: {email: $email, password: $password, name: $name, avatarUrl: $avatarUrl, roles: [\"user\"]})"`
 
 		InsertVerification struct {
 			Email string `graphql:"email"`

@@ -34,12 +34,73 @@ type ResetPasswordPayload struct {
 	} `json:"input"`
 }
 
+type SignUpRequestPayload struct {
+	Input struct {
+		Arg1 struct {
+			Email     string `json:"email"`
+			Password  string `json:"password"`
+			Name      string `json:"name"`
+			AvatarUrl string `json:"avatarUrl"`
+		} `json:"arg1"`
+	} `json:"input"`
+}
+
+type LoginRequestPayload struct {
+	Input struct {
+		Arg1 struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		} `json:"arg1"`
+	} `json:"input"`
+}
+
 func LoginHandler(c *gin.Context) {
 
+	var payload SignUpRequestPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		_ = c.Error(response.NewValidationError("Invalid JSON login payload parameters.", err))
+		return
+	}
+
+	inputs := payload.Input.Arg1
+
+	token, err := authService.Login(c.Request.Context(), inputs.Email, inputs.Password)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	response.SendOk(c, gin.H{
+		"data":    token,
+		"message": "Authenitcate succesfully",
+	})
 }
 
 func SignUpHandler(c *gin.Context) {
+	var payload SignUpRequestPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		_ = c.Error(response.NewValidationError("Invalid JSON registration payload structure parameters.", err))
+		return
+	}
 
+	inputs := payload.Input.Arg1
+
+	err := authService.RegisterNewUser(
+		c.Request.Context(),
+		inputs.Email,
+		inputs.Password,
+		inputs.Name,
+		inputs.AvatarUrl,
+	)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	response.SendCreated(c, "CREATED", gin.H{
+		"message": "Registration initialized successfully. Please check your email to verify your account.",
+	})
 }
 
 func ForgotPasswordHandler(c *gin.Context) {
