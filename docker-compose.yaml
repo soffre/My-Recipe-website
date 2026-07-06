@@ -6,6 +6,12 @@ services:
       - ./db_data:/var/lib/postgresql/data
     environment:
       POSTGRES_PASSWORD: postgrespassword
+  
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
 
   go-backend:
     build:
@@ -18,6 +24,7 @@ services:
       - ./go-functions:/app
     environment:
       JWT_SECRET_KEY: a-string-secret-at-least-256-bits-long
+      REDIS_URL: "redis:6379"
       VERIFICATION_CODE_TTL: "15m"
       EVENT_SECRET: "my-event-secret"
       HASURA_GRAPHQL_ENDPOINT: "http://graphql-engine:8080/v1/graphql"
@@ -25,10 +32,25 @@ services:
       CLOUDINARY_CLOUD_NAME: "tafach-kitchen"
       CLOUDINARY_API_KEY: "482643656233765"
       CLOUDINARY_API_SECRET: "ENPlIw_l8bUr6_oq5mNgv13eAs8"
+    depends_on:
+      - redis
+  
+  go-worker:
+    build: 
+      context: ./go-functions
+      dockerfile: Dockerfile.dev
+    command: go run cmd/worker/main.go
+    restart: always
+    volumes:
+      - ./go-functions:/app
+    environment:
+      REDIS_URL: "redis:6379"
       SMTP_SENDER: "tafachkitchen@gmail.com"
       SMTP_PASSWORD: "nhes gfdp cngx xvvo"
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
+    depends_on:
+      - redis
 
   graphql-engine:
     image: hasura/graphql-engine:latest
@@ -57,6 +79,8 @@ services:
     depends_on:
       data-connector-agent:
         condition: service_healthy
+      redis:
+        condition: service_started
   data-connector-agent:
     image: hasura/graphql-data-connector:v2.46.0
     restart: always

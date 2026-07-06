@@ -3,6 +3,8 @@ package utils
 import (
 	"encoding/json"
 	"go-functions/internal/repository"
+
+	"github.com/hibiken/asynq"
 )
 
 // TaskEmailDelivery is the unique string identifier for our queue

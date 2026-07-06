@@ -3,7 +3,6 @@ package services
 import (
 	"context"
 	utils "go-functions/Utils"
-	"go-functions/internal/mail"
 	"go-functions/internal/repository"
 	"go-functions/internal/response"
 	"log"
@@ -19,6 +18,7 @@ import (
 
 type AuthService struct {
 	repo      *repository.HasuraRepository
+	queue     *QueueService
 	jwtSecret []byte
 	codeTTL   time.Duration
 }
@@ -33,7 +33,7 @@ type UserProfile struct {
 
 var DefaultAvatarURL = os.Getenv("DEFAULT_AVATER_URL")
 
-func NewAuthService(repo *repository.HasuraRepository, jwtSecret string, codeTTLStr string) *AuthService {
+func NewAuthService(repo *repository.HasuraRepository, queue *QueueService, jwtSecret string, codeTTLStr string) *AuthService {
 	duration := 15 * time.Minute
 
 	if codeTTLStr != "" {
@@ -46,6 +46,7 @@ func NewAuthService(repo *repository.HasuraRepository, jwtSecret string, codeTTL
 	}
 	return &AuthService{
 		repo:      repo,
+		queue:     queue,
 		jwtSecret: []byte(jwtSecret),
 		codeTTL:   duration,
 	}
@@ -139,10 +140,8 @@ func (s *AuthService) RegisterNewUser(ctx context.Context, email, password, name
 		return err
 	}
 
-	subject := utils.SubjectEmailVerification
-	body := utils.GetEmailVerificationTemplate(verifyCode)
-	if err = mail.SendEmail(email, subject, body); err != nil {
-		return response.NewSMTPMailError("Account registered successfully, but verification email delivery failed.", err)
+	if err := s.queue.EnqueueEmail(ctx, email, verifyCode, repository.ActionEmailVerification); err != nil {
+		log.Printf("[QUEUE WARNING] Failed to buffer async email task payload: %v", err)
 	}
 
 	return nil
@@ -180,7 +179,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 
 func (s *AuthService) InitiatePasswordReset(ctx context.Context, email string) error {
 
-	if err := s.InitiateVerificationSend(ctx, email, string(repository.ActionPasswordReset)); err != nil {
+	if err := s.InitiateVerificationSend(ctx, email, repository.ActionPasswordReset); err != nil {
 		return err
 	}
 
@@ -255,7 +254,7 @@ func (s *AuthService) CompletePasswordReset(ctx context.Context, email, secretCo
 	return nil
 }
 
-func (s *AuthService) InitiateVerificationSend(ctx context.Context, email, actionType string) error {
+func (s *AuthService) InitiateVerificationSend(ctx context.Context, email string, actionType repository.VerificationAction) error {
 
 	if !utils.IsValidEmail(email) {
 		return &response.AppError{
@@ -290,30 +289,20 @@ func (s *AuthService) InitiateVerificationSend(ctx context.Context, email, actio
 	}
 
 	if status != repository.StatusNoRowExists {
-		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, currentData.Code, actionType, "EXPIRED"); err != nil {
+		if err := s.repo.ArchiveAndPurgeVerificationRow(ctx, email, currentData.Code, string(actionType), "EXPIRED"); err != nil {
 			log.Printf("[WARNING] Audit log processing sequence encountered an interruption: %v", err)
 		}
 	}
 
 	newCode := utils.GenerateRandomString(6)
 
-	err = s.repo.InsertVerificationRow(ctx, email, newCode, s.codeTTL, actionType)
+	err = s.repo.InsertVerificationRow(ctx, email, newCode, s.codeTTL, string(actionType))
 	if err != nil {
 		return err
 	}
 
-	var subject, body string
-	if actionType == string(repository.ActionPasswordReset) {
-		subject = utils.SubjectPasswordReset
-		body = utils.GetPasswordResetTemplate(newCode)
-	} else {
-		subject = utils.SubjectEmailVerification
-		body = utils.GetEmailVerificationTemplate(newCode)
-	}
-
-	err = mail.SendEmail(email, subject, body)
-	if err != nil {
-		return response.NewSMTPMailError("we could not send your code. Please try again later.", err)
+	if err := s.queue.EnqueueEmail(ctx, email, newCode, actionType); err != nil {
+		log.Printf("[QUEUE WARNING] Failed to buffer async password reset payload: %v", err)
 	}
 
 	return nil

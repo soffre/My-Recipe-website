@@ -1,6 +1,7 @@
 package actions
 
 import (
+	"go-functions/internal/repository"
 	"go-functions/internal/response"
 
 	"github.com/gin-gonic/gin"
@@ -159,7 +160,7 @@ func ResendVerificationCodeHandler(c *gin.Context) {
 		return
 	}
 
-	err := authService.InitiateVerificationSend(c.Request.Context(), payload.Input.Arg1.Email, payload.Input.Arg1.ActionType)
+	err := authService.InitiateVerificationSend(c.Request.Context(), payload.Input.Arg1.Email, repository.VerificationAction(payload.Input.Arg1.ActionType))
 	if err != nil {
 		_ = c.Error(err)
 		return
