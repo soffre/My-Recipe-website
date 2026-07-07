@@ -71,7 +71,6 @@ services:
       HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
       ACTION_BASE_URL: http://go-backend:8080
       EVENT_SECRET: my-event-secret
-      ## uncomment next line to set an admin secret
       HASURA_GRAPHQL_ADMIN_SECRET: mystrongsecret
       HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "a-string-secret-at-least-256-bits-long"}'
       HASURA_GRAPHQL_UNAUTHORIZED_ROLE: anonymous
