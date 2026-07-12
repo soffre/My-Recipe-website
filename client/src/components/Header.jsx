@@ -83,7 +83,7 @@ function UserDropdown({ user, onLogout }) {
             My Account
           </Link>
           <Link
-            to="/recipes/new"
+            to="/create-recipe"
             className="block px-4 py-2 text-sm text-tafach-dark transition-colors hover:bg-tafach-light hover:text-tafach-orange"
             onClick={() => setIsOpen(false)}
           >
@@ -312,7 +312,7 @@ export default function Header() {
                 </Link>
                 <Link 
                   className="block rounded-md px-3 py-2 font-bold text-tafach-green transition-colors duration-200 hover:bg-green-50" 
-                  to="/recipes/new" 
+                  to="/create-recipe" 
                   onClick={closeMobileMenu}
                 >
                   ➕ Create Recipe
