@@ -10,7 +10,8 @@ import Login from './pages/Login';
 import ResetPassword from './pages/ResetPassword';
 import SignUp from './pages/SignUp';
 import VerifyEmail from './pages/VerifyEmail';
-import CreateRecipe from './pages/CreateRecipe'
+import CreateRecipe from './pages/CreateRecipe';
+import RecipeDetail from './pages/RecipeDetail';
 
 function AuthRoute({ children }) {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ export default function App() {
         <Route element={<ProtectedRoute/>}>
           <Route path='/create-recipe' element={<CreateRecipe/>} />
         </Route>
+        <Route path="/recipe/:id" element={<RecipeDetail />} />
       </Route>
 
        <Route

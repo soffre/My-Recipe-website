@@ -25,9 +25,8 @@ export const CREATE_RECIPE_MUTATION = gql`
     $cookTime: Int!
     $servings: Int!
     $cuisine: String!
-    $thumbnailUrl: String!s
+    $thumbnailUrl: String!
     $images: [String!]!
-    $categories: [String!]! 
     $ingredients: [Recipe_Ingredient_Insert_Input!]!
     $instructions: [Recipe_Instruction_Insert_Input!]!
   ) {
@@ -41,7 +40,6 @@ export const CREATE_RECIPE_MUTATION = gql`
         cuisine: $cuisine
         thumbnail_url: $thumbnailUrl
         image_gallery: $images
-        categories: $categories 
         ingredients: { data: $ingredients }
         instructions: { data: $instructions }
       }
