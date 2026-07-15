@@ -13,6 +13,10 @@ import VerifyEmail from './pages/VerifyEmail';
 import CreateRecipe from './pages/CreateRecipe';
 import RecipeDetail from './pages/RecipeDetail';
 import ExploreRecipes from './pages/Explore';
+import QuickAndEasy from './pages/QuickAndEasy';
+import Guides from './pages/Guides';
+import GuideDetail from './pages/GuideDetail';
+import WriteGuide from './pages/Writeguide';
 
 function AuthRoute({ children }) {
   const { user } = useAuth();
@@ -37,6 +41,10 @@ export default function App() {
         </Route>
         <Route path="/recipe/:id" element={<RecipeDetail />} />
         <Route path="/explore" element={<ExploreRecipes />} />
+        <Route path="/quick-and-easy" element={<QuickAndEasy />} />
+        <Route path="/guides" element={<Guides />} />
+        <Route path="/guides/:id" element={<GuideDetail />} />
+        <Route path="/guides/write" element={<WriteGuide />} />
       </Route>
 
        <Route
