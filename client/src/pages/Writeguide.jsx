@@ -1,25 +1,186 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
+
+// --- Custom Interactive Drag-to-Resize & Rotate Image Component ---
+const ResizableImageComponent = (props) => {
+  const containerRef = useRef(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizerDirection, setResizerDirection] = useState(null);
+  const [initialMouseX, setInitialMouseX] = useState(0);
+  const [initialMouseY, setInitialMouseY] = useState(0);
+  const [initialWidthPx, setInitialWidthPx] = useState(0);
+
+  const currentRotation = props.node.attrs.rotation || 0;
+
+  const onMouseDown = (e, dir) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizerDirection(dir);
+    setInitialMouseX(e.clientX);
+    setInitialMouseY(e.clientY);
+    if (containerRef.current) {
+      setInitialWidthPx(containerRef.current.getBoundingClientRect().width);
+    }
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+    
+    const onMouseMove = (e) => {
+      const deltaX = e.clientX - initialMouseX;
+      const deltaY = e.clientY - initialMouseY;
+      
+      let effectiveDelta = 0;
+      
+      // Calculate effective movement based on the current rotation angle
+      if (currentRotation === 0) {
+        effectiveDelta = ['ne', 'se'].includes(resizerDirection) ? deltaX : -deltaX;
+      } else if (currentRotation === 90) {
+        effectiveDelta = ['ne', 'se'].includes(resizerDirection) ? deltaY : -deltaY;
+      } else if (currentRotation === 180) {
+        effectiveDelta = ['ne', 'se'].includes(resizerDirection) ? -deltaX : deltaX;
+      } else if (currentRotation === 270) {
+        effectiveDelta = ['ne', 'se'].includes(resizerDirection) ? -deltaY : deltaY;
+      }
+      
+      // Multiply by 2 because the container is center-aligned; expanding one side expands the other.
+      const widthChange = effectiveDelta * 2; 
+      const newWidth = Math.max(150, initialWidthPx + widthChange);
+      
+      props.updateAttributes({ width: `${newWidth}px` });
+    };
+    
+    const onMouseUp = () => {
+      setIsResizing(false);
+      setResizerDirection(null);
+    };
+    
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isResizing, initialMouseX, initialMouseY, initialWidthPx, resizerDirection, currentRotation, props]);
+
+  const handleRotate = (e) => {
+    e.preventDefault();
+    e.stopPropagation(); 
+    const newRotation = (currentRotation + 90) % 360;
+    props.updateAttributes({ rotation: newRotation });
+  };
+
+  const handleClasses = "absolute w-4 h-4 bg-white border-2 border-orange-500 rounded-full shadow-md z-50 transition-transform hover:scale-125";
+
+  return (
+    <NodeViewWrapper className="flex justify-center my-12 max-w-full">
+      {/* 
+        The rotation is now applied to this container block. 
+        This keeps the buttons and handles perfectly attached to the image corners.
+      */}
+      <div 
+        ref={containerRef}
+        style={{ 
+          width: props.node.attrs.width || '100%',
+          transform: `rotate(${currentRotation}deg)`,
+          transition: isResizing ? 'none' : 'transform 0.3s ease-in-out'
+        }} 
+        className="relative group inline-block max-w-full"
+      >
+        <img
+          src={props.node.attrs.src}
+          alt="Uploaded content"
+          className={`rounded-xl shadow-md w-full h-auto object-cover cursor-pointer transition-shadow ${
+            props.selected || isResizing ? 'ring-4 ring-orange-500 ring-offset-2' : 'hover:ring-2 hover:ring-gray-300 hover:ring-offset-2'
+          }`}
+          onClick={props.selectNode}
+        />
+        
+        {/* Floating Rotate Button inside the wrapper so it moves with the rotation */}
+        {props.selected && (
+          <div className="absolute top-3 right-3 flex items-center bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-lg border border-gray-200 z-50">
+            <button
+              onClick={handleRotate}
+              className="p-1.5 text-gray-600 hover:bg-orange-100 hover:text-orange-600 rounded transition-colors"
+              title="Rotate 90°"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* 4 Corner Drag Handles */}
+        {(props.selected || isResizing) && (
+          <>
+            <div 
+              className={`${handleClasses} -top-2 -left-2 cursor-nwse-resize`}
+              onMouseDown={(e) => onMouseDown(e, 'nw')}
+              title="Resize"
+            />
+            <div 
+              className={`${handleClasses} -top-2 -right-2 cursor-nesw-resize`}
+              onMouseDown={(e) => onMouseDown(e, 'ne')}
+              title="Resize"
+            />
+            <div 
+              className={`${handleClasses} -bottom-2 -left-2 cursor-nesw-resize`}
+              onMouseDown={(e) => onMouseDown(e, 'sw')}
+              title="Resize"
+            />
+            <div 
+              className={`${handleClasses} -bottom-2 -right-2 cursor-nwse-resize`}
+              onMouseDown={(e) => onMouseDown(e, 'se')}
+              title="Resize"
+            />
+          </>
+        )}
+      </div>
+    </NodeViewWrapper>
+  );
+};
+
+// --- Extend standard Tiptap Image to use our custom React component ---
+const CustomImage = Image.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      width: {
+        default: '100%',
+      },
+      rotation: {
+        default: 0,
+      }
+    };
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ResizableImageComponent);
+  },
+});
 
 // --- Tiptap Toolbar Component ---
 const MenuBar = ({ editor }) => {
   if (!editor) return null;
 
-  const addImage = useCallback(() => {
-    const url = window.prompt('Enter image URL:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
+  const handleEditorImageUpload = useCallback((e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const imageUrl = URL.createObjectURL(file);
+      editor.chain().focus().setImage({ src: imageUrl, width: '100%', rotation: 0 }).run();
     }
+    e.target.value = '';
   }, [editor]);
 
-  // Guaranteed active colors using inline styles to bypass Tailwind compilation stripping
-  const activeBg = '#f97316'; // Tailwind orange-500
+  const activeBg = '#f97316'; 
   const activeText = '#ffffff'; 
-  const inactiveText = '#374151'; // Tailwind gray-700
+  const inactiveText = '#374151'; 
 
   return (
     <div className="sticky top-[64px] z-40 bg-white py-3 border-y border-gray-200 mb-6 flex flex-wrap items-center gap-1 sm:gap-2">
@@ -95,14 +256,18 @@ const MenuBar = ({ editor }) => {
         <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" /></svg>
       </button>
 
-      <button
-        type="button"
-        onClick={addImage}
-        className="p-2 rounded flex items-center justify-center transition-all text-gray-700 hover:bg-gray-100"
+      <label
+        className="p-2 rounded flex items-center justify-center transition-all text-gray-700 hover:bg-gray-100 cursor-pointer"
         title="Add Image"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-      </button>
+        <input 
+          type="file" 
+          accept="image/*" 
+          className="hidden" 
+          onChange={handleEditorImageUpload} 
+        />
+      </label>
     </div>
   );
 };
@@ -120,11 +285,7 @@ export default function WriteGuide() {
   const editor = useEditor({
     extensions: [
       StarterKit,
-      Image.configure({
-        HTMLAttributes: {
-          class: 'rounded-xl shadow-md my-8 w-full max-w-3xl object-cover',
-        },
-      }),
+      CustomImage, 
       Placeholder.configure({
         placeholder: 'Tell your story...',
       }),
@@ -136,7 +297,6 @@ export default function WriteGuide() {
                '[&_h2]:text-3xl [&_h2]:font-extrabold [&_h2]:mt-10 [&_h2]:mb-4 ' +
                '[&_h3]:text-2xl [&_h3]:font-bold [&_h3]:mt-8 [&_h3]:mb-3 ' +
                '[&_p]:mb-4 ' +
-               // Ensure blockquotes render correctly using standard tailwind utilities
                '[&_blockquote]:border-l-4 [&_blockquote]:border-orange-500 [&_blockquote]:pl-6 [&_blockquote]:py-4 [&_blockquote]:my-8 [&_blockquote]:bg-orange-50 [&_blockquote]:rounded-r-lg [&_blockquote]:italic [&_blockquote]:text-gray-600 [&_blockquote_p]:m-0 ' +
                '[&_ul]:list-disc [&_ul]:ml-6 [&_ul]:mb-6 [&_ul]:space-y-2 ' +
                '[&_ol]:list-decimal [&_ol]:ml-6 [&_ol]:mb-6 [&_ol]:space-y-2 ' +
@@ -176,7 +336,7 @@ export default function WriteGuide() {
     <div className="min-h-screen bg-white pb-20 pt-8">
       <main className="max-w-4xl mx-auto px-4 md:px-8">
         
-        {/* Header Actions matching screenshot */}
+        {/* Header Actions */}
         <div className="flex items-center justify-between mb-10 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-4 text-sm">
             <Link to="/guides" className="text-gray-500 hover:text-gray-800 transition-colors">
@@ -211,7 +371,7 @@ export default function WriteGuide() {
           </select>
         </div>
 
-        {/* Reverted Dashed Cover Image Area */}
+        {/* Cover Image Area */}
         <div className="mb-10 group relative rounded-xl overflow-hidden border-2 border-dashed border-gray-300 hover:border-orange-500 transition-colors bg-white">
           {coverImage ? (
             <div className="relative aspect-[21/9] w-full">
@@ -257,7 +417,7 @@ export default function WriteGuide() {
 
         <MenuBar editor={editor} />
         
-        {/* Editor Wrapper with full width */}
+        {/* Editor Wrapper */}
         <div className="w-full">
           <EditorContent editor={editor} />
         </div>

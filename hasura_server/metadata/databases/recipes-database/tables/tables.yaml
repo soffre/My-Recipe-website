@@ -8,3 +8,4 @@
 - "!include public_Recipes_image.yaml"
 - "!include public_Users.yaml"
 - "!include public_VerificationData.yaml"
+- "!include public_VerificationLogs.yaml"

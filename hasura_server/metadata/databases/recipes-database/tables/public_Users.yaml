@@ -57,7 +57,7 @@ insert_permissions:
     permission:
       check: {}
       columns:
-        - avater_url
+        - avatarUrl
         - email
         - name
         - password
@@ -67,7 +67,7 @@ select_permissions:
   - role: anonymous
     permission:
       columns:
-        - avater_url
+        - avatarUrl
         - email
         - id
         - name
@@ -78,7 +78,7 @@ select_permissions:
   - role: user
     permission:
       columns:
-        - avater_url
+        - avatarUrl
         - email
         - name
         - password
@@ -95,7 +95,7 @@ update_permissions:
   - role: user
     permission:
       columns:
-        - avater_url
+        - avatarUrl
         - email
         - name
         - password

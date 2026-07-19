@@ -11,8 +11,31 @@ actions:
         query_params: {}
         template_engine: Kriti
         version: 2
+    permissions:
+      - role: anonymous
+      - role: user
     comment: This action handles the forgot password functionality by redirecting to go handler and allow user to start the forgot password function
-  - name: login
+  - name: getCloudinarySignature
+    definition:
+      kind: ""
+      handler: '{{ACTION_BASE_URL}}/cloudinary_signature'
+      forward_client_headers: true
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: GET
+        query_params: {}
+        request_headers:
+          add_headers: {}
+          remove_headers:
+            - content-type
+        template_engine: Kriti
+        version: 2
+    permissions:
+      - role: user
+    comment: This action handle a request comes from client to get the cloudinary upload signature
+  - name: loginUser
     definition:
       kind: synchronous
       handler: '{{ACTION_BASE_URL}}/login'
@@ -25,6 +48,9 @@ actions:
         query_params: {}
         template_engine: Kriti
         version: 2
+    permissions:
+      - role: anonymous
+      - role: user
   - name: passwordReset
     definition:
       kind: synchronous
@@ -38,8 +64,27 @@ actions:
         query_params: {}
         template_engine: Kriti
         version: 2
+    permissions:
+      - role: anonymous
+      - role: user
     comment: Password resetting after verification done, which send new password and a secret code to the handler
-  - name: signup
+  - name: resendCode
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/resend_code'
+      headers:
+        - name: x-hasura-event-secret
+          value_from_env: EVENT_SECRET
+      request_transform:
+        method: POST
+        query_params: {}
+        template_engine: Kriti
+        version: 2
+    permissions:
+      - role: anonymous
+      - role: user
+    comment: action for resend verification   code if expired
+  - name: signupUser
     definition:
       kind: synchronous
       handler: '{{ACTION_BASE_URL}}/signup'
@@ -56,24 +101,6 @@ actions:
       - role: anonymous
       - role: user
     comment: This action does a signup or registration functionality for new user.
-  - name: uploadSignature
-    definition:
-      kind: ""
-      handler: '{{ACTION_BASE_URL}}/upload_signature'
-      forward_client_headers: true
-      headers:
-        - name: x-hasura-event-secret
-          value_from_env: EVENT_SECRET
-      request_transform:
-        method: GET
-        query_params: {}
-        request_headers:
-          add_headers: {}
-          remove_headers:
-            - content-type
-        template_engine: Kriti
-        version: 2
-    comment: This action handle a request comes from client to get the cloudinary upload signature
   - name: verifyEmail
     definition:
       kind: synchronous
@@ -87,11 +114,14 @@ actions:
         query_params: {}
         template_engine: Kriti
         version: 2
+    permissions:
+      - role: user
+      - role: anonymous
     comment: To verify a code during email verification or password reset after getting verification code by email
-  - name: verifyPassResetCode
+  - name: verifyResetCode
     definition:
       kind: synchronous
-      handler: '{{ACTION_BASE_URL}}/verify_pass_reset_code'
+      handler: '{{ACTION_BASE_URL}}/verify_resetCode'
       forward_client_headers: true
       headers:
         - name: x-hasura-event-secret
@@ -101,6 +131,9 @@ actions:
         query_params: {}
         template_engine: Kriti
         version: 2
+    permissions:
+      - role: anonymous
+      - role: user
 custom_types:
   enums: []
   input_objects:
@@ -111,6 +144,10 @@ custom_types:
     - name: newInputs
     - name: Input2
     - name: VerificationInput2
+    - name: ResendCodeInput
+    - name: CloudinaryInput
+    - name: AuthInput
+    - name: SignInput
   objects:
     - name: Token
     - name: Output
@@ -119,4 +156,6 @@ custom_types:
     - name: Output2
     - name: output2
     - name: response
+    - name: CloudinaryOutput
+    - name: LoginOutput
   scalars: []

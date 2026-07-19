@@ -4,26 +4,34 @@ type Mutation {
   ): Output2!
 }
 
+type Query {
+  getCloudinarySignature(
+    arg1: CloudinaryInput!
+  ): CloudinaryOutput!
+}
+
 type Mutation {
-  login(
-    credentails: userCredentials!
-  ): Token
+  loginUser(
+    arg1: AuthInput!
+  ): LoginOutput!
 }
 
 type Mutation {
   passwordReset(
     inputs: newInputs!
-  ): Response
+  ): Output2
 }
 
 type Mutation {
-  signup(
-    inputs: Input!
-  ): Output
+  resendCode(
+    arg1: ResendCodeInput!
+  ): Output2!
 }
 
-type Query {
-  uploadSignature: response!
+type Mutation {
+  signupUser(
+    arg1: SignInput!
+  ): Output2!
 }
 
 type Mutation {
@@ -33,9 +41,9 @@ type Mutation {
 }
 
 type Mutation {
-  verifyPassResetCode(
+  verifyResetCode(
     verCode: VerificationInput2!
-  ): output2
+  ): output
 }
 
 input userCredentials {
@@ -76,16 +84,40 @@ input VerificationInput2 {
   code: String!
 }
 
+input ResendCodeInput {
+  email: String!
+  actionType: String!
+}
+
+input CloudinaryInput {
+  folder: String!
+}
+
+input AuthInput {
+  email: String!
+  password: String!
+}
+
+input SignInput {
+  email: String!
+  password: String!
+  name: String!
+  avatarUrl: String
+}
+
 type Token {
   accessToken: String!
 }
 
 type Output {
   message: String!
+  code: String
 }
 
 type output {
+  success: Boolean
   message: String!
+  code: String
 }
 
 type Response {
@@ -93,7 +125,9 @@ type Response {
 }
 
 type Output2 {
+  success: Boolean
   message: String!
+  code: String
 }
 
 type output2 {
@@ -104,5 +138,16 @@ type output2 {
 type response {
   timestamp: String!
   signature: String!
+}
+
+type CloudinaryOutput {
+  message: String
+  data: String!
+}
+
+type LoginOutput {
+  message: String
+  code: String
+  token: String!
 }
 

@@ -1,6 +1,6 @@
 import { ApolloClient, ApolloLink, InMemoryCache, createHttpLink } from '@apollo/client';
 
-const graphqlEndpoint = import.meta.env.VITE_HASURA_GRAPHQL_ENDPOINT || 'http://localhost:8080/v1/graphql';
+const graphqlEndpoint = import.meta.env.VITE_HASURA_GRAPHQL_ENDPOINT || 'http://192.168.100.181:8080/v1/graphql';
 
 const httpLink = createHttpLink({
   uri: graphqlEndpoint,
