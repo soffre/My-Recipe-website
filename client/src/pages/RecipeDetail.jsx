@@ -37,7 +37,6 @@ const mockRecipeData = {
   likesCount: 142,
   avgRating: 4.9,
   commentsCount: 3,
-  // Updated with nested replies structure
   initialComments: [
     { 
       id: "c1", 
@@ -85,18 +84,31 @@ export default function RecipeDetail() {
   // Comments and Replies State
   const [commentsList, setCommentsList] = useState(mockRecipeData.initialComments);
   const [commentInput, setCommentInput] = useState('');
-  const [replyingToId, setReplyingToId] = useState(null); // Tracks which comment is being replied to
+  const [replyingToId, setReplyingToId] = useState(null); 
   const [replyInput, setReplyInput] = useState('');
 
-  useEffect(() => {
+ useEffect(() => {
+    // 1. Lock body scroll when lightbox is open to prevent mobile URL bar glitch
+    if (isLightboxOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
     const handleKeyDown = (e) => {
       if (!isLightboxOpen) return;
       if (e.key === 'Escape') setIsLightboxOpen(false);
       if (e.key === 'ArrowRight') handleNextImage(e);
       if (e.key === 'ArrowLeft') handlePrevImage(e);
     };
+    
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    
+    // 2. Cleanup function runs when lightbox closes or component unmounts
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset'; // Always restore scrolling!
+    };
   }, [isLightboxOpen]);
 
   const handlePrevImage = (e) => {
@@ -154,7 +166,7 @@ export default function RecipeDetail() {
       userAvatar: user?.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=50&h=50",
       text: replyInput.trim(),
       timestamp: "Just now",
-      isCreator: false // Set to true if the logged-in user ID matches the author's ID
+      isCreator: false 
     };
 
     const updatedComments = commentsList.map((comm) => {
@@ -173,36 +185,39 @@ export default function RecipeDetail() {
     <>
       {/* --- FULL SCREEN LIGHTBOX MODAL --- */}
       {isLightboxOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md transition-opacity">
-          <div className="absolute top-0 right-0 left-0 flex justify-between p-4 text-white">
-            <div className="text-sm font-bold opacity-70">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/95 backdrop-blur-md transition-opacity">
+          
+          {/* Added z-10 here so the header is always on top of the image. Added bg-black/50 to buttons for mobile clarity */}
+          <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between text-white sm:top-6 sm:left-6 sm:right-6">
+            <div className="rounded-full bg-black/50 px-3 py-1 text-sm font-bold opacity-90 backdrop-blur-sm">
               {activeImageIndex + 1} / {allImages.length}
             </div>
             <button 
               onClick={() => setIsLightboxOpen(false)}
-              className="text-3xl transition hover:scale-110 hover:text-tafach-orange"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-3xl leading-none text-white transition hover:scale-110 hover:bg-tafach-orange focus:outline-none"
+              aria-label="Close lightbox"
             >
               &times;
             </button>
           </div>
 
-          <div className="relative flex h-3/4 w-full items-center justify-center px-12">
-            <button onClick={handlePrevImage} className="absolute left-4 rounded-full bg-black/50 p-4 text-white transition hover:bg-tafach-orange focus:outline-none md:left-8">
+          <div className="relative z-0 flex h-3/4 w-full items-center justify-center px-4 sm:px-12">
+            <button onClick={handlePrevImage} className="absolute left-2 sm:left-8 z-10 rounded-full bg-black/50 p-3 sm:p-4 text-white transition hover:bg-tafach-orange focus:outline-none">
               &#8249;
             </button>
             <img src={allImages[activeImageIndex]} alt="Gallery Fullscreen" className="max-h-full max-w-full rounded shadow-2xl object-contain fade-in" />
-            <button onClick={handleNextImage} className="absolute right-4 rounded-full bg-black/50 p-4 text-white transition hover:bg-tafach-orange focus:outline-none md:right-8">
+            <button onClick={handleNextImage} className="absolute right-2 sm:right-8 z-10 rounded-full bg-black/50 p-3 sm:p-4 text-white transition hover:bg-tafach-orange focus:outline-none">
               &#8250;
             </button>
           </div>
 
-          <div className="absolute bottom-8 flex gap-2 overflow-x-auto px-4 py-2">
+          <div className="absolute bottom-6 flex gap-2 overflow-x-auto px-4 py-2 w-full justify-center">
             {allImages.map((img, idx) => (
               <img 
                 key={idx}
                 src={img} 
                 onClick={() => setActiveImageIndex(idx)}
-                className={`h-16 w-24 shrink-0 cursor-pointer rounded border-2 object-cover transition-all hover:opacity-100 ${
+                className={`h-14 w-20 sm:h-16 sm:w-24 shrink-0 cursor-pointer rounded border-2 object-cover transition-all hover:opacity-100 ${
                   activeImageIndex === idx ? 'border-tafach-orange opacity-100' : 'border-transparent opacity-40'
                 }`}
                 alt={`Thumbnail ${idx + 1}`}

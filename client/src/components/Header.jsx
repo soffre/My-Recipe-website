@@ -71,7 +71,6 @@ function UserDropdown({ user, onLogout }) {
         className="flex items-center justify-center rounded-full outline-none transition duration-200 active:scale-95"
         aria-label="Open user menu"
       >
-        {/* FIXED: Added a permanent soft orange ring that turns solid on hover */}
         <img
           className="h-9 w-9 rounded-full object-cover shadow-sm ring-2 ring-tafach-orange/60 transition-all duration-200 hover:ring-tafach-orange"
           src={user.avatarUrl || fallbackAvatar}
@@ -94,6 +93,13 @@ function UserDropdown({ user, onLogout }) {
             onClick={() => setIsOpen(false)}
           >
             Create Recipe
+          </Link>
+          <Link
+            to="/guides/write"
+            className="block px-4 py-2 text-sm text-tafach-dark transition-colors hover:bg-tafach-light hover:text-tafach-orange"
+            onClick={() => setIsOpen(false)}
+          >
+            Create Guide
           </Link>
           <Link
             to="/favorites"
@@ -127,6 +133,20 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   
   const isAnonymous = user?.role === 'anonymous' || !user;
+
+  // --- Scroll Lock Effect ---
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup to ensure scrolling returns when the component unmounts
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   function closeMobileMenu() {
     setIsMobileMenuOpen(false);
@@ -204,10 +224,10 @@ export default function Header() {
         </button>
       </nav>
 
-      {/* Mobile Drawer Backdrop */}
+      {/* Mobile Drawer Backdrop - Updated to unified opacity syntax */}
       {isMobileMenuOpen ? (
         <button
-          className="fixed inset-0 z-40 bg-black bg-opacity-30 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
           type="button"
           onClick={closeMobileMenu}
           aria-label="Close menu"
@@ -272,7 +292,6 @@ export default function Header() {
               </>
             ) : (
               <>
-                {/* FIXED: Built a dedicated profile block with avatar, name, and email */}
                 <div className="mb-2 px-2 flex items-center gap-3">
                   <img
                     src={user.avatarUrl || fallbackAvatar}
@@ -300,6 +319,13 @@ export default function Header() {
                   onClick={closeMobileMenu}
                 >
                   Create Recipe
+                </Link>
+                <Link 
+                  className="block rounded-md px-3 py-2 text-sm text-tafach-dark transition-colors hover:bg-tafach-light hover:text-tafach-orange" 
+                  to="/guides/write" 
+                  onClick={closeMobileMenu}
+                >
+                  Create Guide
                 </Link>
                 <Link 
                   className="block rounded-md px-3 py-2 text-sm text-tafach-dark transition-colors hover:bg-tafach-light hover:text-tafach-orange" 

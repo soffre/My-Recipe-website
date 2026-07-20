@@ -16,13 +16,20 @@ const ResizableImageComponent = (props) => {
 
   const currentRotation = props.node.attrs.rotation || 0;
 
-  const onMouseDown = (e, dir) => {
-    e.preventDefault();
+  // Handles both mouse and touch start events
+  const startResize = (e, dir) => {
+    // Prevent default to stop mobile scrolling while dragging
+    if (e.cancelable) e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
     setResizerDirection(dir);
-    setInitialMouseX(e.clientX);
-    setInitialMouseY(e.clientY);
+    
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    setInitialMouseX(clientX);
+    setInitialMouseY(clientY);
+    
     if (containerRef.current) {
       setInitialWidthPx(containerRef.current.getBoundingClientRect().width);
     }
@@ -31,9 +38,15 @@ const ResizableImageComponent = (props) => {
   useEffect(() => {
     if (!isResizing) return;
     
-    const onMouseMove = (e) => {
-      const deltaX = e.clientX - initialMouseX;
-      const deltaY = e.clientY - initialMouseY;
+    const onMove = (e) => {
+      // Prevent scrolling while resizing on mobile
+      if (e.cancelable) e.preventDefault(); 
+      
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      
+      const deltaX = clientX - initialMouseX;
+      const deltaY = clientY - initialMouseY;
       
       let effectiveDelta = 0;
       
@@ -48,24 +61,31 @@ const ResizableImageComponent = (props) => {
         effectiveDelta = ['ne', 'se'].includes(resizerDirection) ? -deltaY : deltaY;
       }
       
-      // Multiply by 2 because the container is center-aligned; expanding one side expands the other.
+      // Multiply by 2 because the container is center-aligned
       const widthChange = effectiveDelta * 2; 
-      const newWidth = Math.max(150, initialWidthPx + widthChange);
+      const newWidth = Math.max(100, initialWidthPx + widthChange); // Adjusted min-width for mobile
       
       props.updateAttributes({ width: `${newWidth}px` });
     };
     
-    const onMouseUp = () => {
+    const onUp = () => {
       setIsResizing(false);
       setResizerDirection(null);
     };
     
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
+    // Mouse events
+    window.addEventListener('mousemove', onMove, { passive: false });
+    window.addEventListener('mouseup', onUp);
+    
+    // Touch events for mobile
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
     
     return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
     };
   }, [isResizing, initialMouseX, initialMouseY, initialWidthPx, resizerDirection, currentRotation, props]);
 
@@ -76,14 +96,11 @@ const ResizableImageComponent = (props) => {
     props.updateAttributes({ rotation: newRotation });
   };
 
-  const handleClasses = "absolute w-4 h-4 bg-white border-2 border-orange-500 rounded-full shadow-md z-50 transition-transform hover:scale-125";
+  // Added touch-none to prevent scrolling when grabbing handles, and made handles slightly bigger on mobile
+  const handleClasses = "absolute w-6 h-6 sm:w-4 sm:h-4 bg-white border-2 border-orange-500 rounded-full shadow-md z-50 transition-transform hover:scale-125 touch-none";
 
   return (
-    <NodeViewWrapper className="flex justify-center my-12 max-w-full">
-      {/* 
-        The rotation is now applied to this container block. 
-        This keeps the buttons and handles perfectly attached to the image corners.
-      */}
+    <NodeViewWrapper className="flex justify-center my-12 max-w-full px-2 sm:px-0">
       <div 
         ref={containerRef}
         style={{ 
@@ -107,37 +124,41 @@ const ResizableImageComponent = (props) => {
           <div className="absolute top-3 right-3 flex items-center bg-white/90 backdrop-blur-sm p-1 rounded-lg shadow-lg border border-gray-200 z-50">
             <button
               onClick={handleRotate}
-              className="p-1.5 text-gray-600 hover:bg-orange-100 hover:text-orange-600 rounded transition-colors"
+              className="p-1.5 sm:p-2 text-gray-600 hover:bg-orange-100 hover:text-orange-600 rounded transition-colors touch-manipulation"
               title="Rotate 90°"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </button>
           </div>
         )}
 
-        {/* 4 Corner Drag Handles */}
+        {/* 4 Corner Drag Handles (Touch & Mouse Support) */}
         {(props.selected || isResizing) && (
           <>
             <div 
-              className={`${handleClasses} -top-2 -left-2 cursor-nwse-resize`}
-              onMouseDown={(e) => onMouseDown(e, 'nw')}
+              className={`${handleClasses} -top-3 -left-3 sm:-top-2 sm:-left-2 cursor-nwse-resize`}
+              onMouseDown={(e) => startResize(e, 'nw')}
+              onTouchStart={(e) => startResize(e, 'nw')}
               title="Resize"
             />
             <div 
-              className={`${handleClasses} -top-2 -right-2 cursor-nesw-resize`}
-              onMouseDown={(e) => onMouseDown(e, 'ne')}
+              className={`${handleClasses} -top-3 -right-3 sm:-top-2 sm:-right-2 cursor-nesw-resize`}
+              onMouseDown={(e) => startResize(e, 'ne')}
+              onTouchStart={(e) => startResize(e, 'ne')}
               title="Resize"
             />
             <div 
-              className={`${handleClasses} -bottom-2 -left-2 cursor-nesw-resize`}
-              onMouseDown={(e) => onMouseDown(e, 'sw')}
+              className={`${handleClasses} -bottom-3 -left-3 sm:-bottom-2 sm:-left-2 cursor-nesw-resize`}
+              onMouseDown={(e) => startResize(e, 'sw')}
+              onTouchStart={(e) => startResize(e, 'sw')}
               title="Resize"
             />
             <div 
-              className={`${handleClasses} -bottom-2 -right-2 cursor-nwse-resize`}
-              onMouseDown={(e) => onMouseDown(e, 'se')}
+              className={`${handleClasses} -bottom-3 -right-3 sm:-bottom-2 sm:-right-2 cursor-nwse-resize`}
+              onMouseDown={(e) => startResize(e, 'se')}
+              onTouchStart={(e) => startResize(e, 'se')}
               title="Resize"
             />
           </>
@@ -401,7 +422,7 @@ export default function WriteGuide() {
             handleInputResize(e);
           }}
           rows={1}
-          className="w-full text-5xl lg:text-6xl font-extrabold text-gray-800 placeholder:text-gray-300 outline-none resize-none bg-transparent mb-6 leading-tight"
+          className="w-full text-4xl lg:text-6xl font-extrabold text-gray-800 placeholder:text-gray-300 outline-none resize-none bg-transparent mb-6 leading-tight"
         />
 
         <textarea
