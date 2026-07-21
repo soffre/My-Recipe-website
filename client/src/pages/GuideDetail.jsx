@@ -70,7 +70,7 @@ export default function GuideDetail() {
 
       {/* Hero Image */}
       <div className="max-w-5xl mx-auto px-4 md:px-6 mb-12">
-        <div className="relative aspect-[16/9] md:aspect-[21/9] w-full rounded-2xl overflow-hidden bg-tafach-light shadow-md">
+        <div className="relative aspect-video md:aspect-21/9 w-full rounded-2xl overflow-hidden bg-tafach-light shadow-md">
           <img 
             src={mockGuide.heroImg} 
             alt={mockGuide.title} 
@@ -145,7 +145,7 @@ export default function GuideDetail() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
             {relatedGuides.map((guide) => (
               <Link key={guide.id} to={`/guides/${guide.id}`} className="group flex flex-col bg-white rounded-xl overflow-hidden border border-tafach-border hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                <div className="aspect-[16/9] overflow-hidden bg-tafach-light relative">
+                <div className="aspect-video overflow-hidden bg-tafach-light relative">
                   <img 
                     src={guide.img} 
                     alt={guide.title} 

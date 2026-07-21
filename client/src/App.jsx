@@ -17,6 +17,9 @@ import QuickAndEasy from './pages/QuickAndEasy';
 import Guides from './pages/Guides';
 import GuideDetail from './pages/GuideDetail';
 import WriteGuide from './pages/Writeguide';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import AdminConsole from './pages/admin/AdminConsole';
 
 function AuthRoute({ children }) {
   const { user } = useAuth();
@@ -45,8 +48,11 @@ export default function App() {
         <Route path="/guides" element={<Guides />} />
         <Route path="/guides/:id" element={<GuideDetail />} />
         <Route path="/guides/write" element={<WriteGuide />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
       </Route>
 
+        <Route path="/admin" element={<AdminConsole />} />
        <Route
           path="/signup"
           element={

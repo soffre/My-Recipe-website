@@ -243,7 +243,7 @@ export default function ExploreRecipes() {
                     </div>
                   </div>
 
-                  <div className="p-4 flex flex-col flex-grow">
+                  <div className="p-4 flex flex-col grow">
                     <span className="text-[10px] text-tafach-muted uppercase tracking-wider">By {recipe.creatorName}</span>
                     <h4 className="font-bold text-sm text-tafach-dark mt-1 line-clamp-1 group-hover:text-tafach-orange transition-colors">{recipe.title}</h4>
 

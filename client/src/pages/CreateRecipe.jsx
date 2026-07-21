@@ -39,7 +39,7 @@ function Stepper({ currentStep }) {
           </span>
           {step.num < 3 && (
             <div
-              className={`mx-4 h-[2px] flex-1 transition-colors ${
+              className={`mx-4 h-0.5 flex-1 transition-colors ${
                 currentStep > step.num ? 'bg-tafach-orange' : 'bg-tafach-border'
               }`}
             />
