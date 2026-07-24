@@ -167,7 +167,7 @@ export default function Home() {
   });
 
   return (
-    <div className="flex min-h-screen flex-col bg-white text-tafach-dark font-brand rounded-3xl">
+    <div className="flex min-h-screen flex-col bg-white text-tafach-dark font-brand rounded-4xl">
       
       {/* PROFESSIONAL, CLEAN HERO SECTION */}
       <section className="relative border-b border-tafach-border/50 bg-white pt-10 pb-16 lg:pt-20 lg:pb-24">
