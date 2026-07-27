@@ -1,0 +1,138 @@
+version: '3.8'
+
+networks:
+  prod-net:
+    driver: bridge
+
+services:
+
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: production_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"   # Receives plain HTTP and hands it to Nginx to redirect
+    networks:
+      - prod-net
+    depends_on:
+      - react-ui
+      - graphql-engine
+    restart: always
+
+  react-ui:
+    build: 
+      context: ./client     
+      dockerfile: Dockerfile  
+    container_name: react_frontend
+    expose:
+      - "80"
+    networks:
+      - prod-net
+    restart: always
+
+  postgres:
+    image: postgres:16
+    restart: always
+    volumes:
+      - ./db_data:/var/lib/postgresql/data
+    networks:
+      - prod-net
+    environment:
+      POSTGRES_PASSWORD: postgrespassword
+
+  redis:
+    image: redis:7-alpine
+    networks:
+      - prod-net
+    restart: always
+    expose:
+      - "6379"
+
+  go-backend:
+    build:
+      context: ./go-functions
+      dockerfile: Dockerfile.prod # <-- Targets the new optimized production file
+    command: ./go-backend-bin      # <-- Automatically executes the pre-compiled server binary
+    expose:
+      - "8080"
+    networks:
+      - prod-net
+    restart: always
+    environment:
+      JWT_SECRET_KEY: a-string-secret-at-least-256-bits-long
+      REDIS_URL: "redis:6379"
+      VERIFICATION_CODE_TTL: "15m"
+      EVENT_SECRET: "my-event-secret"
+      HASURA_GRAPHQL_ENDPOINT: "http://graphql-engine:8080/v1/graphql"
+      HASURA_ADMIN_SECRET: mystrongsecret
+      CLOUDINARY_CLOUD_NAME: "tafancy-kitchen"
+      CLOUDINARY_API_KEY: "482643656233765"
+      CLOUDINARY_API_SECRET: "ENPlIw_l8bUr6_oq5mNgv13eAs8"
+    depends_on:
+      - redis
+  
+  go-worker:
+    build: 
+      context: ./go-functions
+      dockerfile: Dockerfile.prod # <-- Shares the exact same container file asset
+    command: ./go-worker-bin       # <-- FIXED: Runs optimized compiled worker binary 
+    networks:
+      - prod-net
+    restart: always
+    environment:
+      REDIS_URL: "redis:6379"
+      SMTP_SENDER: "tafachkitchen@gmail.com"
+      SMTP_PASSWORD: "nhes gfdp cngx xvvo"
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+    depends_on:
+      - redis
+
+  graphql-engine:
+    image: hasura/graphql-engine:latest
+    expose:
+      - "8080"
+    networks:
+      - prod-net
+    restart: always
+    environment:
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/postgres
+      PG_DATABASE_URL: postgres://postgres:postgrespassword@postgres:5432/postgres
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" 
+      HASURA_GRAPHQL_DEV_MODE: "true" 
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_CONSOLE_ASSETS_DIR: /srv/console-assets
+      ACTION_BASE_URL: http://go-backend:8080
+      EVENT_SECRET: my-event-secret
+      HASURA_GRAPHQL_ADMIN_SECRET: mystrongsecret
+      HASURA_GRAPHQL_JWT_SECRET: '{"type":"HS256", "key": "a-string-secret-at-least-256-bits-long"}'
+      HASURA_GRAPHQL_UNAUTHORIZED_ROLE: anonymous
+      HASURA_GRAPHQL_METADATA_DEFAULTS: '{"backend_configs":{"dataconnector":{"athena":{"uri":"http://data-connector-agent:8081/api/v1/athena"},"mariadb":{"uri":"http://data-connector-agent:8081/api/v1/mariadb"},"mysql8":{"uri":"http://data-connector-agent:8081/api/v1/mysql"},"oracle":{"uri":"http://data-connector-agent:8081/api/v1/oracle"},"snowflake":{"uri":"http://data-connector-agent:8081/api/v1/snowflake"}}}}'
+    depends_on:
+      data-connector-agent:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  data-connector-agent:
+    image: hasura/graphql-data-connector:v2.46.0
+    networks:
+      - prod-net
+    restart: always
+    expose:
+      - "8081"
+    environment:
+      QUARKUS_LOG_LEVEL: ERROR
+      QUARKUS_OPENTELEMETRY_ENABLED: "false"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/api/v1/athena/health" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+
+
+
+volumes:
+  db_data:

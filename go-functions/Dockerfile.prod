@@ -1,0 +1,28 @@
+# Stage 1: The Compiler Layer (Runs only during build time)
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
+
+# Install git natively inside the build stage 
+RUN apk add --no-cache git
+
+# Pull down your Go dependencies cleanly over Wi-Fi
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Bring in your Go source code structure
+COPY . .
+
+# Compile your distinct application entry paths into static binaries
+RUN CGO_ENABLED=0 GOOS=linux go build -o go-backend-bin main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o go-worker-bin cmd/worker/main.go
+
+
+# Stage 2: The Running Production Layer (The only layer kept on disk)
+FROM alpine:latest
+WORKDIR /app
+
+# Automatically copy the freshly compiled binaries from Stage 1
+COPY --from=builder /app/go-backend-bin .
+COPY --from=builder /app/go-worker-bin .
+
+EXPOSE 8080
