@@ -4,9 +4,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // server: {
-  //   host: true
-  // }
+  server: {
+    host: true
+  },
   build: {
     // Elevates the warning trigger threshold so your build logs stay clean
     chunkSizeWarningLimit: 1200, 

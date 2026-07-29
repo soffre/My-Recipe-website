@@ -1,18 +1,24 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-tafach-orange: #ff5733;
+  --color-tafach-orange: #FF5733;
+  --color-tafach-dark: #1A1A1A;
+  --color-tafach-light: #FAFAFA;
+  --color-tafach-muted: #64748B;
+  --color-tafach-border: #F1F5F9;
   --color-tafach-green: #2ecc71;
-  --color-tafach-dark: #1a1a1a;
-  --color-tafach-light: #f9f9f9;
-  --color-tafach-muted: #7f8c8d;
-  --color-tafach-border: #e2e8f0;
   --color-tafach-error: #dc2626;
 
   --spacing-grid-1: 8px;
   --spacing-grid-2: 16px;
   --spacing-grid-3: 24px;
   --spacing-grid-4: 32px;
+  --spacing-grid-5: 40px;
+  --spacing-grid-6: 48px;
+  --spacing-grid-7: 56px;
+  --spacing-grid-8: 64px;
+
+  --font-brand: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @layer base {
